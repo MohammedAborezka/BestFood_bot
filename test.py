@@ -1,12 +1,20 @@
 from flask import Flask, request, jsonify
 import requests
+import os
+from dotenv import load_dotenv
+
+# Load .env file (for local testing)
+load_dotenv()
 
 app = Flask(__name__)
 
-ACCESS_TOKEN = "EAAgI4mZBPdbUBPiT2UPzN9Ea5n2oY3LjP6W08TvMCBxulZC56Qzoo2eHgt33GdvyxiiFAdXk4gLzD1CdEoNPd0toRHArcAaPYZAfvGxJozVy0AaB7I1gxKi5t6Wdf6HBBGjBQ6CnrhsJwRUVgzM9OHrl5WVZAIVC1NstfzJHrQGvHJMhfU3MSZCjcfyrjQkNjA6mDS81AdQ3GlyCbvmtwc16TplcQmhAzkxWZAziOa0gZDZD"
-PHONE_ID = "01557902213"
+# Load environment variables
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+PHONE_ID = os.getenv("PHONE_ID")
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "my_verify_token")
 
 def send_message(to, text):
+    """Send a WhatsApp message using the Meta Graph API"""
     url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
     payload = {
         "messaging_product": "whatsapp",
@@ -15,18 +23,24 @@ def send_message(to, text):
         "text": {"body": text}
     }
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-    requests.post(url, json=payload, headers=headers)
+    response = requests.post(url, json=payload, headers=headers)
+    print("📤 Message send response:", response.text)
+
+@app.route("/", methods=["GET"])
+def home():
+    """Simple route to check if the bot is live"""
+    return "✅ WhatsApp Bot is running!"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    """Handle incoming WhatsApp messages"""
     data = request.get_json()
-    
+
     try:
         message = data['entry'][0]['changes'][0]['value']['messages'][0]
         sender = message['from']
         text = message['text']['body']
-        
-        # Detect if this is the user's first message
+
         if text:
             welcome_msg = (
                 "👋 Hello! Welcome to my WhatsApp chatbot.\n"
@@ -34,9 +48,23 @@ def webhook():
             )
             send_message(sender, welcome_msg)
     except Exception as e:
-        print("Error:", e)
-        
+        print("⚠️ Error:", e)
+
     return jsonify(status="ok")
 
+@app.route("/webhook", methods=["GET"])
+def verify():
+    """Verification endpoint required by Meta"""
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
+
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        print("✅ Webhook verified successfully!")
+        return challenge
+    else:
+        return "❌ Verification failed", 403
+
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
