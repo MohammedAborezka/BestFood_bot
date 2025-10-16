@@ -31,39 +31,46 @@ def home():
     """Simple route to check if the bot is live"""
     return "✅ WhatsApp Bot is running!"
 
-@app.route("/webhook", methods=["POST"])
+@app.route("/webhook", methods=["GET", "POST"])
 def webhook():
-    """Handle incoming WhatsApp messages"""
-    data = request.get_json()
+    """
+    Handles both:
+    - GET: Webhook verification (for Meta setup)
+    - POST: Incoming WhatsApp messages
+    """
+    if request.method == "GET":
+        # Verification request from Meta
+        mode = request.args.get("hub.mode")
+        token = request.args.get("hub.verify_token")
+        challenge = request.args.get("hub.challenge")
 
-    try:
-        message = data['entry'][0]['changes'][0]['value']['messages'][0]
-        sender = message['from']
-        text = message['text']['body']
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            print("✅ Webhook verified successfully!")
+            return challenge, 200
+        else:
+            print("❌ Verification failed. Invalid token or mode.")
+            return "Verification failed", 403
 
-        if text:
-            welcome_msg = (
-                "👋 Hello! Welcome to my WhatsApp chatbot.\n"
-                "I'm here to help you. How can I assist you today?"
-            )
-            send_message(sender, welcome_msg)
-    except Exception as e:
-        print("⚠️ Error:", e)
+    if request.method == "POST":
+        # Incoming message from WhatsApp
+        data = request.get_json()
+        print("📩 Incoming message:", data)
 
-    return jsonify(status="ok")
+        try:
+            message = data['entry'][0]['changes'][0]['value']['messages'][0]
+            sender = message['from']
+            text = message['text']['body']
 
-@app.route("/webhook", methods=["GET"])
-def verify():
-    """Verification endpoint required by Meta"""
-    mode = request.args.get("hub.mode")
-    token = request.args.get("hub.verify_token")
-    challenge = request.args.get("hub.challenge")
+            if text:
+                welcome_msg = (
+                    "👋 Hello! Welcome to my WhatsApp chatbot.\n"
+                    "I'm here to help you. How can I assist you today?"
+                )
+                send_message(sender, welcome_msg)
+        except Exception as e:
+            print("⚠️ Error processing message:", e)
 
-    if mode == "subscribe" and token == VERIFY_TOKEN:
-        print("✅ Webhook verified successfully!")
-        return challenge
-    else:
-        return "❌ Verification failed", 403
+        return jsonify(status="ok"), 200
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
