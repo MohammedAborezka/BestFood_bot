@@ -25,6 +25,10 @@ def send_message(to, text):
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
     response = requests.post(url, json=payload, headers=headers)
     print("📤 Message send response:", response.text)
+    
+@app.route("/cert.txt")
+def serve_cert():
+    return send_file("cert.txt")
 
 @app.route("/", methods=["GET"])
 def home():
