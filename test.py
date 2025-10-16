@@ -3,8 +3,8 @@ import requests
 
 app = Flask(__name__)
 
-ACCESS_TOKEN = "YOUR_ACCESS_TOKEN"
-PHONE_ID = "YOUR_PHONE_NUMBER_ID"
+ACCESS_TOKEN = "EAAgI4mZBPdbUBPiT2UPzN9Ea5n2oY3LjP6W08TvMCBxulZC56Qzoo2eHgt33GdvyxiiFAdXk4gLzD1CdEoNPd0toRHArcAaPYZAfvGxJozVy0AaB7I1gxKi5t6Wdf6HBBGjBQ6CnrhsJwRUVgzM9OHrl5WVZAIVC1NstfzJHrQGvHJMhfU3MSZCjcfyrjQkNjA6mDS81AdQ3GlyCbvmtwc16TplcQmhAzkxWZAziOa0gZDZD"
+PHONE_ID = "01557902213"
 
 def send_message(to, text):
     url = f"https://graph.facebook.com/v19.0/{PHONE_ID}/messages"
